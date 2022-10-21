@@ -1,0 +1,411 @@
+#CLEANING THE APRIL DATA HERE:
+#1.Checking for nulls
+
+SELECT
+ ride_id,
+ rideable_type,
+ started_at,
+ ended_at,
+ start_station_name,
+ start_station_id,
+ end_station_name,
+ end_station_id,
+ start_lat,
+ start_lng,
+ end_lat,
+ end_lng,
+ member_casual
+FROM
+ `capstone-data-analytics-course.cycle_data.april`
+WHERE
+ ride_id IS NULL
+ OR rideable_type IS NULL
+ OR started_at IS NULL
+ OR ended_at IS NULL
+ OR start_station_name IS NULL
+ OR start_station_id IS NULL
+ OR end_station_name IS NULL
+ OR end_station_id IS NULL
+ OR start_lat IS NULL
+ OR start_lng IS NULL
+ OR end_lat IS NULL
+ OR end_lng IS NULL
+ OR member_casual IS NULL
+ 
+ 
+#2. How many types of unique entries exist
+SELECT
+ COUNT(DISTINCT(ride_id)) AS number_of_distinct_rides,
+ COUNT(DISTINCT(rideable_type)) AS no_of_rideable,
+ COUNT(DISTINCT(start_station_name)) AS no_of_startstn,
+ COUNT(DISTINCT(start_station_id)) AS no_of_startstnID,
+ COUNT(DISTINCT(end_station_name)) AS no_of_endstn,
+ COUNT(DISTINCT(end_station_id)) AS no_of_endstnID,
+ COUNT(DISTINCT(member_casual)) AS types_of_workers, 
+
+FROM
+ `capstone-data-analytics-course.cycle_data.april`
+ 
+#3. Checking for null in a column
+SELECT
+ COUNT(ride_id),
+FROM
+ `capstone-data-analytics-course.cycle_data.april`
+WHERE
+ ride_id IS NULL
+ 
+#4. Checking range of each column(that is supposed to have a range)
+SELECT
+ MIN(start_lat) AS Min_start_lat,
+ MAX(start_lat) AS Max_start_lat,
+ MIN(end_lat) AS Min_end_lat,
+ MAX(end_lat) AS Max_end_lat,
+ MIN(start_lng) AS Min_start_lng,
+ MAX(start_lng) AS Max_start_lng,
+ MIN(end_lng) AS Min_end_lng,
+ MAX(end_lng) AS Max_end_lng
+FROM `capstone-data-analytics-course.cycle_data.april`
+
+#5. Checking the distinct objects in this column
+SELECT
+ DISTINCT(rideable_type),
+FROM
+ `capstone-data-analytics-course.cycle_data.april`
+ 
+#6. Checking the wrong time entries in this table
+SELECT
+ COUNT(*) AS wrong_time_entries
+FROM
+`capstone-data-analytics-course.cycle_data.april`
+WHERE
+ started_at>ended_at
+ 
+ #7. Datatype change for May table
+ SELECT
+ ride_id,
+ rideable_type,
+ started_at,
+ ended_at,
+ start_station_name,
+ CAST(start_station_id AS STRING) AS start_station_id,
+ end_station_name,
+ CAST(end_station_id AS STRING) AS end_station_id,
+ start_lat,
+ start_lng,
+ end_lat,
+ end_lng,
+ member_casual
+
+ FROM
+  `capstone-data-analytics-course.cycle_data.may` 
+
+#I did not check distinct for every column as I have already done this on R and know the data.
+#I also did not check for all months as I already did it in R
+
+#8.Combining all the tables
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.april2`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.may2`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.june2`
+UNION ALL
+SELECT *
+FROM 
+ `capstone-data-analytics-course.cycle_data.july2`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.aug11`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.aug22`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.sep2`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.oct2`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.nov2`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.dec`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.jan`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.feb`
+UNION ALL
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.mar`
+ 
+#9.Filtering this table to get rid of start_time>end_time
+SELECT *
+FROM
+ `capstone-data-analytics-course.cycle_data.mtable`
+WHERE
+ started_at < ended_at
+OR
+ started_at = ended_at
+ 
+#10.Creating a new table with north-south and east-west direction
+WITH temp_table1 AS(
+  SELECT 
+   ride_id,
+   rideable_type,
+   started_at,
+   ended_at,
+   start_station_name,
+   start_station_id,
+   end_station_name,
+   end_station_id,
+   start_lat,
+   start_lng,
+   end_lat,
+   end_lng,
+   member_casual,
+   ended_at-started_at AS rideduration,
+   FORMAT_DATE("%A",started_at) AS day_of_week,
+   EXTRACT(MONTH FROM started_at) AS month,
+   FORMAT_DATE("%B",started_at) AS month_name,
+   start_lat - end_lat AS lat_difference,
+   start_lng - end_lng AS lng_difference
+  
+  FROM
+   `capstone-data-analytics-course.cycle_data.mtable2`)
+
+SELECT
+ ride_id,
+ rideable_type,
+ started_at,
+ ended_at,
+ start_station_name,
+ start_station_id,
+ end_station_name,
+ end_station_id,
+ start_lat,
+ start_lng,
+ end_lat,
+ end_lng,
+ member_casual,
+ ended_at-started_at AS rideduration,
+ CASE 
+  WHEN lat_difference <0 THEN 'north'
+  WHEN lat_difference =0 THEN 'no change'
+  WHEN lat_difference IS NOT NULL THEN 'south'
+  ELSE 'NA'
+ END
+ AS north_south_dir,
+ CASE
+  WHEN lng_difference <0 THEN 'east'
+  WHEN lng_difference =0 THEN 'no change'
+  WHEN lng_difference IS NOT NULL THEN 'west'
+  ELSE 'NA'
+ END
+ AS east_west_dir,
+ FORMAT_DATE("%A",started_at) AS day_of_week,
+ EXTRACT(MONTH FROM started_at) AS month,
+ FORMAT_DATE("%B",started_at) AS month_name,
+  
+FROM
+ temp_table1
+
+#11.Computing direction
+SELECT
+ ride_id,
+ rideable_type,
+ started_at,
+ ended_at,
+ start_station_name,
+ start_station_id,
+ end_station_name,
+ end_station_id,
+ start_lat,
+ start_lng,
+ end_lat,
+ end_lng,
+ member_casual,
+ rideduration,
+ north_south_dir,
+ east_west_dir,
+ CASE
+  WHEN north_south_dir = 'north' AND east_west_dir = 'east' THEN 'northeast'
+  WHEN north_south_dir = 'north' AND east_west_dir = 'west' THEN 'northwest'
+  WHEN north_south_dir = 'north' AND east_west_dir = 'no change' THEN 'north'
+  WHEN north_south_dir = 'south' AND east_west_dir = 'east' THEN 'southeast'
+  WHEN north_south_dir = 'south' AND east_west_dir = 'west' THEN 'southwest'
+  WHEN north_south_dir = 'south' AND east_west_dir = 'no change' THEN 'south'
+  WHEN north_south_dir = 'no change' AND east_west_dir = 'east' THEN 'east'
+  WHEN north_south_dir = 'no change' AND east_west_dir = 'west' THEN 'west'
+  WHEN north_south_dir = 'no change' AND east_west_dir = 'no change' THEN 'roundtrip'
+  ELSE 'NA'
+ END
+ AS direction,
+ day_of_week,
+ month,
+ month_name
+
+FROM
+  `capstone-data-analytics-course.cycle_data.mtable3`
+ORDER BY
+  month_name
+  
+  
+#12.Making a table for casual riders
+SELECT *
+FROM `capstone-data-analytics-course.cycle_data.mtable4`
+WHERE member_casual = 'casual'
+ORDER BY
+ month_name
+ 
+#13.Analysis of casual for various metrics
+SELECT
+ COUNT(DISTINCT(ride_id)) AS total_rides_casual,
+ AVG(rideduration) AS mean_rideduration_casual,
+ MIN(rideduration) AS min_rideduration_casual,
+ MAX(rideduration) AS max_rideduration_casual
+
+FROM `capstone-data-analytics-course.cycle_data.casual`
+
+
+#14.CASUAL- Day of the week distribution
+SELECT
+ day_of_week,
+ COUNT(day_of_week) AS count,
+ ROUND(((COUNT(day_of_week))/1427134)*100,2) AS percent
+FROM `capstone-data-analytics-course.cycle_data.casual`
+GROUP BY
+ day_of_week
+ORDER BY
+ day_of_week
+ 
+
+#15.CASUAL- direction distribution
+SELECT
+ direction,
+ COUNT(direction) AS count,
+ ROUND(((COUNT(direction))/1427134)*100,2) AS percent
+FROM `capstone-data-analytics-course.cycle_data.casual`
+GROUP BY
+ direction
+ORDER BY
+ direction
+ 
+ 
+#16.CASUAL- month name distri
+SELECT
+ month_name,
+ COUNT(month_name) AS count,
+ ROUND(((COUNT(month_name))/1427134)*100,2) AS percent
+FROM `capstone-data-analytics-course.cycle_data.casual`
+GROUP BY
+ month_name
+ORDER BY
+ month_name
+
+
+#17.CASUAL- Rides/hour
+WITH temp_table AS(
+  SELECT
+   EXTRACT(HOUR FROM started_at) AS hour,
+  FROM
+   `capstone-data-analytics-course.cycle_data.casual`)
+SELECT
+ hour,
+ COUNT(hour) as count,
+FROM
+ temp_table
+GROUP BY
+ hour
+ORDER BY
+ hour
+ 
+ 
+#18.Making a table for member riders
+SELECT *
+FROM `capstone-data-analytics-course.cycle_data.mtable4`
+WHERE member_casual = 'member'
+ORDER BY
+ month_name
+ 
+ 
+#19.Analysis of member for various metrics
+SELECT
+ COUNT(DISTINCT(ride_id)) AS total_rides_member,
+ AVG(rideduration) AS mean_rideduration_member,
+ MIN(rideduration) AS min_rideduration_member,
+ MAX(rideduration) AS max_rideduration_member
+
+FROM `capstone-data-analytics-course.cycle_data.member`
+
+#20.MEMBER- Day of the week distribution
+SELECT
+ day_of_week,
+ COUNT(day_of_week) AS count,
+ ROUND(((COUNT(day_of_week))/1427134)*100,2) AS percent
+FROM `capstone-data-analytics-course.cycle_data.member`
+GROUP BY
+ day_of_week
+ORDER BY
+ day_of_week
+ 
+ 
+#21.MEMBER- Direction distribution
+SELECT
+ direction,
+ COUNT(direction) AS count,
+ ROUND(((COUNT(direction))/1427134)*100,2) AS percent
+FROM `capstone-data-analytics-course.cycle_data.member`
+GROUP BY
+ direction
+ORDER BY
+ direction
+
+
+#22.MEMBER- month name distri
+SELECT
+ month_name,
+ COUNT(month_name) AS count,
+ ROUND(((COUNT(month_name))/1427134)*100,2) AS percent
+FROM `capstone-data-analytics-course.cycle_data.member`
+GROUP BY
+ month_name
+ORDER BY
+ month_name
+ 
+#24.MEMBER- Rides/hour
+WITH temp_table AS(
+  SELECT
+   EXTRACT(HOUR FROM started_at) AS hour,
+  FROM
+   `capstone-data-analytics-course.cycle_data.member`)
+SELECT
+ hour,
+ COUNT(hour) as count,
+FROM
+ temp_table
+GROUP BY
+ hour
+ORDER BY
+ hour
+ 
+ 
+
+
+
